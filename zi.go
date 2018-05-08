@@ -12,9 +12,9 @@ package main
 //      # commit without flushing previous table contents
 //      iptable-restore -n dump.rules
 //
-// By default creates TORSOCKS chain in nat table (author uses redsocks + tor)
+// By default creates TORSOCKS chain in nat table (author uses redsocks and tor)
 // and populates it with TCP `REDIRECT` from all blocked IPs and networks to
-// port 9050 (transparent proxy).  Then it jumps from PREROUTING and OUTPUT to
+// port 9040 (transparent proxy).  Then it jumps from PREROUTING and OUTPUT to
 // TORSOCKS for TCP connections.
 //
 // Read the code if you want to change the behavior.
@@ -29,6 +29,7 @@ import (
 )
 
 const (
+	transport = 9040
 	chain = "TORSOCKS"
 	maxDestinationsPerRule = 4
 )
@@ -99,7 +100,7 @@ func addRule(addrs []string, domain string, urls []string, department string, un
 			l = maxDestinationsPerRule
 		}
 
-		fmt.Println("-A", chain, "-d", strings.Join(addrs[:l], ","), "-p tcp -j REDIRECT --to-port 9050")
+		fmt.Println("-A", chain, "-d", strings.Join(addrs[:l], ","), "-p tcp -j REDIRECT --to-port", transport)
 
 		if len(addrs) > l {
 			addrs = addrs[l:]
