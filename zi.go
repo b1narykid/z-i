@@ -3,6 +3,12 @@ package main
 // reads from stdin, writes to stdout.
 //
 //  Usage:
+//      # create table, setup routing
+//      iptables -t nat -N TOR
+//      iptables -t nat -A TOR -j RETURN
+//      iptables -t nat -I PREROUTING -p tcp -j TOR
+//      iptables -t nat -I OUTPUT -p tcp -j TOR
+//
 //      # generate ruleset
 //      zi <dump.csv >dump.rules
 //
@@ -12,10 +18,8 @@ package main
 //      # commit without flushing previous table contents
 //      iptable-restore -n dump.rules
 //
-// By default creates TORSOCKS chain in nat table (author uses redsocks and tor)
-// and populates it with TCP `REDIRECT` from all blocked IPs and networks to
-// port 9040 (transparent proxy).  Then it jumps from PREROUTING and OUTPUT to
-// TORSOCKS for TCP connections.
+// By default flushes TOR chain in nat table and populates it with TCP REDIRECT
+// from all blocked IPs and networks to port 9040 (transparent proxy).
 //
 // Read the code if you want to change the behavior.
 
@@ -29,8 +33,8 @@ import (
 )
 
 const (
+	chain = "TOR"
 	transport = 9040
-	chain = "TORSOCKS"
 	maxDestinationsPerRule = 4
 )
 
@@ -81,7 +85,7 @@ func main() {
 
 func before() {
 	fmt.Println("*nat")
-	fmt.Println("-N", chain)
+	fmt.Println("-F", chain)
 }
 
 func addRule(addrs []string, domain string, urls []string, department string, unknown string, date string) {
@@ -100,7 +104,7 @@ func addRule(addrs []string, domain string, urls []string, department string, un
 			l = maxDestinationsPerRule
 		}
 
-		fmt.Println("-A", chain, "-d", strings.Join(addrs[:l], ","), "-p tcp -j REDIRECT --to-port", transport)
+		fmt.Println("-I", chain, "-d", strings.Join(addrs[:l], ","), "-p tcp -j REDIRECT --to-port", transport)
 
 		if len(addrs) > l {
 			addrs = addrs[l:]
@@ -112,7 +116,5 @@ func addRule(addrs []string, domain string, urls []string, department string, un
 
 func after() {
 	fmt.Println("-A", chain, "-j RETURN")
-	fmt.Println("-I PREROUTING -p tcp -j", chain)
-	fmt.Println("-I OUTPUT -p tcp -j", chain)
 	fmt.Println("COMMIT")
 }
