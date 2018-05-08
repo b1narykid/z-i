@@ -1,4 +1,4 @@
 z-i
 ===
 
-Register of Internet Addresses filtered in Russian Federation
+Registry of Internet Addresses filtered in Russian Federation
