@@ -4,7 +4,7 @@ package main
 //
 // WARNING: dump.csv IPs and nets count is greater than default capacity (2^16).
 // Creating set for up to 16777216 (2^24) elements works for me.
-//      ipset create myset hash:net maxelem 16777216
+//    ipset create myset hash:net maxelem 16777216
 //
 //  Usage:
 //      # create set
@@ -12,11 +12,12 @@ package main
 //      # generate and populate set
 //      zi <dump.csv | ipset restore
 //
-//  Custom set name:
+//  IO redirection:
 //      # create set
-//      ipset create "fuck russian rkn" hash:net
+//      ipset create zapret-info hash:net
 //      # generate and populate set
-//      zi -n "fuck russian rkn" <dump.csv | ipset restore
+//      zi -i dump.csv -o ipset.conf
+//      ipset restore -file ipset.conf
 //
 //  Update entry timeout:
 //      # create set
@@ -24,7 +25,14 @@ package main
 //      # generate and populate set
 //      zi -t 3600 <dump.csv | ipset restore
 //
+//  Custom set name:
+//      # create set
+//      ipset create "fuck russian rkn" hash:net
+//      # generate and populate set
+//      zi -n "fuck russian rkn" <dump.csv | ipset restore
+//
 //  Routing setup for transparent TCP proxy:
+//      ipset create myset hash:net timeout 86400 maxelem 16777216
 //      iptables -t nat -I PREROUTING -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
 //      iptables -t nat -I OUTPUT     -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
 //
@@ -46,9 +54,30 @@ var (
 )
 
 func init() {
+	input := ""
+	output := ""
+	// IO options
+	flag.StringVar(&input,  "i", input, "read from file")
+	flag.StringVar(&output, "o", output, "write to file")
+	// format options
 	flag.StringVar(&targetSet, "n", targetSet, "target set name")
 	flag.IntVar(&timeout, "t", timeout, "set entry timeout")
+
 	flag.Parse()
+
+	reopen(&os.Stdin, input, os.Open)
+	reopen(&os.Stdout, output, os.Create)
+}
+
+func reopen(a **os.File, fp string, fopen func(string) (*os.File, error)) {
+	if fp == "" {
+		return
+	}
+	b, err := fopen(fp)
+	if err != nil {
+		panic(err)
+	}
+	*a = b
 }
 
 func main() {
@@ -112,7 +141,7 @@ func addRule(addrs []string, domain string, urls []string, department string, un
 	for _, addr := range addrs {
 		fmt.Printf("add -! %q %q", targetSet, addr)
 		if timeout >= 0 {
-			fmt.Printf(" timeout %q", timeout)
+			fmt.Print(" timeout ", timeout)
 		}
 		fmt.Println()
 	}
