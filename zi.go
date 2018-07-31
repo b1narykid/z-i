@@ -1,55 +1,57 @@
-// zi — generate file for 'iptables-restore -n'
-//
-// The program reads CSV dump of the registry from stdin and writes ipset config
-// to stdout.
-//
-// Read the code if you want to change the behavior.
-//
-// WARNING: dump.csv IPs and nets count is greater than default (2^16) capacity
-// of the ipset hast:net.  Creating set for up to 16777216 (2^24) elements works
-// for me.  The command below creates the hash:net with enough capacity.
-//
-//    ipset create myset hash:net maxelem 16777216
-//
-//
-//  Usage:
-//
-//      # create set
-//      ipset create zapret-info hash:net
-//      # generate and populate set
-//      zi <dump.csv | ipset restore
-//
-//
-//  IO redirection:
-//
-//      # create set
-//      ipset create zapret-info hash:net
-//      # generate and populate set
-//      zi -i dump.csv -o ipset.conf
-//      ipset restore -file ipset.conf
-//
-//
-//  Update entry timeout:
-//
-//      # create set
-//      ipset create zapret-info hash:net timeout 3600
-//      # generate and populate set
-//      zi -t 3600 <dump.csv | ipset restore
-//
-//
-//  Custom set name:
-//
-//      # create set
-//      ipset create "fuck russian rkn" hash:net
-//      # generate and populate set
-//      zi -n "fuck russian rkn" <dump.csv | ipset restore
-//
-//
-//  Routing setup for transparent TCP proxy:
-//
-//      ipset create myset hash:net timeout 86400 maxelem 16777216
-//      iptables -t nat -I PREROUTING -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
-//      iptables -t nat -I OUTPUT     -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
+/*
+zi — generate file for 'iptables-restore -n'
+
+The program reads CSV dump of the registry from stdin and writes ipset config
+to stdout.
+
+Read the code if you want to change the behavior.
+
+WARNING: dump.csv IPs and nets count is greater than default (2^16) capacity
+of the ipset hast:net.  Creating set for up to 16777216 (2^24) elements works
+for me.  The command below creates the hash:net with enough capacity.
+
+  ipset create myset hash:net maxelem 16777216
+
+
+Usage
+
+    # create set
+    ipset create zapret-info hash:net
+    # generate and populate set
+    zi <dump.csv | ipset restore
+
+
+IO redirection
+
+    # create set
+    ipset create zapret-info hash:net
+    # generate and populate set
+    zi -i dump.csv -o ipset.conf
+    ipset restore -file ipset.conf
+
+
+Update entry timeout
+
+    # create set
+    ipset create zapret-info hash:net timeout 3600
+    # generate and populate set
+    zi -t 3600 <dump.csv | ipset restore
+
+
+Custom set name
+
+    # create set
+    ipset create "fuck russian rkn" hash:net
+    # generate and populate set
+    zi -n "fuck russian rkn" <dump.csv | ipset restore
+
+
+Routing setup for transparent TCP proxy
+
+    ipset create zapret-info hash:net timeout 86400 maxelem 16777216
+    iptables -t nat -I PREROUTING -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
+    iptables -t nat -I OUTPUT     -p tcp -m set --match-set zapret-info dst -j REDIRECT --to-port 9040
+*/
 package main
 
 import (
