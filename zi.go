@@ -1,5 +1,5 @@
 /*
-zi — generate file for 'iptables-restore -n'
+zi — generate file for 'ipset restore'
 
 The program reads CSV dump of the registry from stdin and writes ipset config
 to stdout.
